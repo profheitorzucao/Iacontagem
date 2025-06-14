@@ -8,51 +8,65 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnM = document.getElementById("openModalBtn");
     const capturarButton = document.getElementById("capturar");
     const context = preview.getContext('2d');
+    const btnFechar = document.getElementById("fecharmodal");
 
-    navigator.mediaDevices.getUserMedia({ video: true })
+    var streamAtual = null;
+
+    function desativaCam() {
+        if (streamAtual) {
+            streamAtual.getTracks().forEach(track => track.stop());
+            video.srcObject = null; 
+            streamAtual = null;
+        }
+    }
+
+    btnM.onclick = function () {
+        modal.style.display = "flex";
+        imageInput.value = '';
+        navigator.mediaDevices.getUserMedia({ video: true })
             .then((stream) => {
+                streamAtual = stream;
                 video.srcObject = stream;
             })
             .catch((error) => {
                 console.error("Erro ao acessar a câmera:", error);
             });
-
-    btnM.onclick = function() {
-            modal.style.display = "flex";
-            imageInput.value = '';
-        }
+    }
     capturarButton.addEventListener('click', () => {
-            // Definir o tamanho do canvas igual ao do vídeo
-            preview.width = video.videoWidth;
-            preview.height = video.videoHeight;
-            // Desenhar o quadro atual do vídeo no canvas
-            context.drawImage(video, 0, 0, preview.width, preview.height);
-            modal.style.display = "none";
-            preview.classList.remove("d-none");
-            // Mostrar o canvas com a imagem
-        });
+        preview.width = video.videoWidth;
+        preview.height = video.videoHeight;
+        
+        context.drawImage(video, 0, 0, preview.width, preview.height);
+        modal.style.display = "none";
+        preview.classList.remove("d-none");
+        desativaCam();
+    });
+    btnFechar.addEventListener('click', () => {
+        modal.style.display = "none";
+        desativaCam();
+    });
     // Pré-visualização da imagem
     imageInput.addEventListener("change", () => {
         const file = imageInput.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = () => {
-               const img = new Image();
-            img.onload = () => {
-                const canvas = preview;
-                const ctx = canvas.getContext("2d");
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = preview;
+                    const ctx = canvas.getContext("2d");
 
-                // Redimensiona o canvas para o tamanho da imagem (ou defina um fixo)
-                canvas.width = img.width;
-                canvas.height = img.height;
+                    // Redimensiona o canvas para o tamanho da imagem (ou defina um fixo)
+                    canvas.width = img.width;
+                    canvas.height = img.height;
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // limpa antes
-                ctx.drawImage(img, 0, 0);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // limpa antes
+                    ctx.drawImage(img, 0, 0);
 
-                canvas.classList.remove("d-none"); // mostra o canvas
-            };
+                    canvas.classList.remove("d-none"); // mostra o canvas
+                };
 
-            img.src = reader.result;
+                img.src = reader.result;
             };
             reader.readAsDataURL(file);
         }
@@ -63,21 +77,20 @@ document.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
 
         var file = imageInput.files[0];
-        if (!file)
-        {    
-             file =  await canvasToFile(preview);
-             if(!file)
-            { console.log('oi');
+        if (!file) {
+            file = await canvasToFile(preview);
+            if (!file) {
+                console.log('oi');
                 return;
             }
         };
 
         try {
-            const response = await fetch("https://desafioofideas24-prediction.cognitiveservices.azure.com/customvision/v3.0/Prediction/f33129f7-2508-4238-87aa-285c150df208/detect/iterations/Iteration6/image", {
+            const response = await fetch("https://customvisioncontagemia-prediction.cognitiveservices.azure.com/customvision/v3.0/Prediction/f9b7d2d7-ef89-4ed5-8cad-a260bae7d54c/detect/iterations/Root/image", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/octet-stream",
-                    "Prediction-Key": "febf3ab5334c4384812e99fa6bb28f0a"
+                    "Prediction-Key": "FLfkDHJ5xEcxmjL1saR6cg8IaeZgZcnGoZhE7S79gS6b0xpLpSDCJQQJ99BFACYeBjFXJ3w3AAAIACOGBrHc"
                 },
                 body: file
             });
@@ -103,10 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function canvasToFile(canvas) {
-  return new Promise(resolve => {
-    canvas.toBlob(blob => {
-      const file = new File([blob], 'captura.png', { type: 'image/png' });
-      resolve(file);
-    }, 'image/png');
-  });
+    return new Promise(resolve => {
+        canvas.toBlob(blob => {
+            const file = new File([blob], 'captura.png', { type: 'image/png' });
+            resolve(file);
+        }, 'image/png');
+    });
 }
